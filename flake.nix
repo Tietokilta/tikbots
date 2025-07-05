@@ -20,6 +20,39 @@
           tikbot = pkgs.callPackage ./tikbot.nix { };
           wappupokemonbot = pkgs.callPackage ./wappupokemonbot.nix { };
 
+          summer-body-bot-docker = pkgs.dockerTools.buildLayeredImage {
+            name = "summer-body-bot";
+            tag = "latest";
+
+            contents = [
+              pkgs.dockerTools.caCertificates
+            ];
+
+            config.Cmd = [ "${summer-body-bot}/bin/summer-body-bot" ];
+          };
+
+          wappupokemonbot-docker = pkgs.dockerTools.buildLayeredImage {
+            name = "wappupokemonbot";
+            tag = "latest";
+
+            contents = [
+              pkgs.dockerTools.caCertificates
+            ];
+
+            config.Cmd = [ "${wappupokemonbot}/bin/wappupokemonbot" ];
+          };
+
+          tikbot-docker = pkgs.dockerTools.buildLayeredImage {
+            name = "tikbot";
+            tag = "latest";
+
+            contents = [
+              pkgs.dockerTools.caCertificates
+            ];
+
+            config.Cmd = [ "${tikbot}/bin/tikbot" ];
+          };
+
           # TODO: perhaps use dockerTools.mergeImages
           docker = pkgs.dockerTools.buildLayeredImage {
             name = "tikbots";
