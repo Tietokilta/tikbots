@@ -1,0 +1,49 @@
+{
+  "name": "summer-body-bot",
+  "version": "1.0.0",
+  "description": "A Telegram bot for tracking competition scores among Aalto guilds and teams.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "populate": "node populateTestData.js",
+    "generate-stats": "node generateStatsPDF.js",
+    "generate-charts": "node generateCharts.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EppuRuotsalainen/summer-body-bot.git"
+  },
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "telegraf",
+    "telegraf-bot",
+    "telegraf-wizards",
+    "telegraf-scenes",
+    "nodejs",
+    "mongodb",
+    "mongoose",
+    "bot"
+  ],
+  "author": "Eppu Ruotsalainen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EppuRuotsalainen/summer-body-bot/issues"
+  },
+  "homepage": "https://github.com/EppuRuotsalainen/summer-body-bot#readme",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.4.0",
+    "mongoose": "^8.2.0",
+    "node-cron": "^3.0.3",
+    "node-schedule": "^2.1.1",
+    "telegraf": "^4.16.2",
+    "telegraf-session-local": "^2.1.1",
+    "pdfkit": "^0.16.0",
+    "svg-to-pdfkit": "^0.1.8",
+    "d3-node": "^4.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

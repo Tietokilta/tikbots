@@ -1,0 +1,35 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Stop the bot
+        run: |
+          ssh -o StrictHostKeyChecking=no -l ${{ secrets.YOUR_SERVER_USER}} ${{ secrets.YOUR_SERVER_IP}} 'echo ${{ secrets.YOUR_SERVER_USER_PASSWORD}} | sudo -S docker stop summer-body-bot'
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Deploy to Server
+        run: |
+          ssh -o StrictHostKeyChecking=no -l ${{ secrets.YOUR_SERVER_USER}} ${{ secrets.YOUR_SERVER_IP}} 'cd /home/mikmokki/summer-body-bot/ && git pull origin main && echo ${{ secrets.YOUR_SERVER_USER_PASSWORD}} | sudo -S ./deploy-script.sh'
