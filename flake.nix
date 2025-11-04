@@ -1,96 +1,87 @@
 {
   description = "TiK bots docker container";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-
   outputs =
     {
       self,
       nixpkgs,
-      flake-utils,
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        packages = rec {
-          summer-body-bot = pkgs.callPackage ./summer-body-bot.nix { };
-          tikbot = pkgs.callPackage ./tikbot.nix { };
-          wappupokemonbot = pkgs.callPackage ./wappupokemonbot.nix { };
+    let
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems = func: nixpkgs.lib.genAttrs systems (system: func nixpkgs.legacyPackages.${system});
+    in
+    {
+      nixosModules = {
+        default = self.nixosModules.tikbots;
+        tikbots = import ./nixos;
+      };
 
-          summer-body-bot-docker = pkgs.dockerTools.buildLayeredImage {
-            name = "summer-body-bot";
-            tag = "latest";
+      packages = forAllSystems (pkgs: rec {
+        summer-body-bot = pkgs.callPackage ./summer-body-bot.nix { };
+        tikbot = pkgs.callPackage ./tikbot.nix { };
+        wappupokemonbot = pkgs.callPackage ./wappupokemonbot.nix { };
 
-            contents = [
-              pkgs.dockerTools.caCertificates
-            ];
+        summer-body-bot-docker = pkgs.dockerTools.buildLayeredImage {
+          name = "summer-body-bot";
+          tag = "latest";
 
-            config.Cmd = [ "${summer-body-bot}/bin/summer-body-bot" ];
-          };
+          contents = [
+            pkgs.dockerTools.caCertificates
+          ];
 
-          wappupokemonbot-docker = pkgs.dockerTools.buildLayeredImage {
-            name = "wappupokemonbot";
-            tag = "latest";
-
-            contents = [
-              pkgs.dockerTools.caCertificates
-            ];
-
-            config.Cmd = [ "${wappupokemonbot}/bin/wappupokemonbot" ];
-          };
-
-          tikbot-docker = pkgs.dockerTools.buildLayeredImage {
-            name = "tikbot";
-            tag = "latest";
-
-            contents = [
-              pkgs.dockerTools.caCertificates
-            ];
-
-            config.Cmd = [ "${tikbot}/bin/tikbot" ];
-          };
-
-          # TODO: perhaps use dockerTools.mergeImages
-          docker = pkgs.dockerTools.buildLayeredImage {
-            name = "tikbots";
-            tag = "latest";
-
-            contents = [
-              pkgs.dockerTools.binSh
-              pkgs.dockerTools.caCertificates
-            ];
-
-            config.Cmd =
-              let
-                entrypoint = pkgs.writeShellScriptBin "entrypoint.sh" ''
-                  sh -ac ". /summer-body-bot/env; exec ${summer-body-bot}/bin/summer-body-bot" &
-                  sh -ac ". /tikbot/env; exec ${tikbot}/bin/tikbot" &
-                  sh -ac ". /wappupokemonbot/env; exec ${wappupokemonbot}/bin/wappupokemonbot" &
-                  wait
-                '';
-              in
-              [ "${entrypoint}/bin/entrypoint.sh" ];
-          };
-
-          default = docker;
-
-          #docker =
-          #  (nixpkgs.lib.nixosSystem {
-          #    modules = [
-          #      {
-          #        _module.args = {
-          #          inherit summer-body-bot tikbot wappupokemonbot;
-          #        };
-          #      }
-          #      "${nixpkgs}/nixos/modules/virtualisation/docker-image.nix"
-          #      "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-          #      ./configuration.nix
-          #    ];
-          #  }).config.system.build.tarball;
+          config.Cmd = [ "${summer-body-bot}/bin/summer-body-bot" ];
         };
-      }
-    );
+
+        wappupokemonbot-docker = pkgs.dockerTools.buildLayeredImage {
+          name = "wappupokemonbot";
+          tag = "latest";
+
+          contents = [
+            pkgs.dockerTools.caCertificates
+          ];
+
+          config.Cmd = [ "${wappupokemonbot}/bin/wappupokemonbot" ];
+        };
+
+        tikbot-docker = pkgs.dockerTools.buildLayeredImage {
+          name = "tikbot";
+          tag = "latest";
+
+          contents = [
+            pkgs.dockerTools.caCertificates
+          ];
+
+          config.Cmd = [ "${tikbot}/bin/tikbot" ];
+        };
+
+        # TODO: perhaps use dockerTools.mergeImages
+        docker = pkgs.dockerTools.buildLayeredImage {
+          name = "tikbots";
+          tag = "latest";
+
+          contents = [
+            pkgs.dockerTools.binSh
+            pkgs.dockerTools.caCertificates
+          ];
+
+          config.Cmd =
+            let
+              entrypoint = pkgs.writeShellScriptBin "entrypoint.sh" ''
+                sh -ac ". /summer-body-bot/env; exec ${summer-body-bot}/bin/summer-body-bot" &
+                sh -ac ". /tikbot/env; exec ${tikbot}/bin/tikbot" &
+                sh -ac ". /wappupokemonbot/env; exec ${wappupokemonbot}/bin/wappupokemonbot" &
+                wait
+              '';
+            in
+            [ "${entrypoint}/bin/entrypoint.sh" ];
+        };
+
+        default = docker;
+      });
+    };
 }
