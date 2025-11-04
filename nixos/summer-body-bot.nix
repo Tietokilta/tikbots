@@ -1,0 +1,100 @@
+{
+  pkgs,
+  config,
+  lib,
+  options,
+  ...
+}:
+let
+  cfg = config.services.tikbots.summer-body-bot;
+  inherit (lib)
+    mkEnableOption
+    mkIf
+    mkOption
+    types
+    ;
+in
+{
+  options.services.tikbots.summer-body-bot = {
+    enable = mkEnableOption "summer-body-bot";
+    package = mkOption {
+      description = "The package to use for summer-body-bot";
+      type = with types; nullOr package;
+      default = pkgs.callPackage ../summer-body-bot.nix { };
+    };
+    user = mkOption {
+      description = "The user account to run the bot under";
+      type = types.str;
+      default = "summer-body-bot";
+    };
+
+    useLocalMongo = mkOption {
+      description = ''
+        Whether to create and use a local MongoDB database.
+        If this option is set to true, do not set an environment
+        variable for `MONGODB_URI`, if this is set to false, set
+        the `MONGODB_URI` manually.
+      '';
+      type = types.bool;
+      default = true;
+    };
+
+    envFile = mkOption {
+      description = ''
+        File containing environment variables to be set for the bot.
+
+        This option should be used to set environment variables
+        that should stay a secret, and `env` for variables
+        that are ok to be public.
+      '';
+      type = with types; nullOr path;
+      default = null;
+    };
+
+    env = mkOption {
+      description = ''
+        Attribute set of environment variables to be set for the bot.
+
+        Do not set secret variables using this option, as they will be
+        public.
+      '';
+      inherit (options.environment.variables) type apply;
+    };
+  };
+
+  config = mkIf cfg.enable {
+    systemd.services.summer-body-bot = {
+      enable = true;
+      wantedBy = [ "multi-user.target" ];
+      after = mkIf (cfg.useLocalMongo) [
+        "mongodb.service"
+      ];
+
+      environment =
+        cfg.env
+        // (lib.optionalAttrs (cfg.useLocalMongo) {
+          MONGODB_URI = "mongodb://${config.services.mongodb.bind_ip}:27017/summer-body-bot";
+        });
+
+      serviceConfig = {
+        EnvironmentFile = mkIf (cfg.envFile != null) cfg.envFile;
+        Type = "simple";
+        ExecStart = lib.getExe cfg.package;
+        User = cfg.user;
+        Group = cfg.user;
+        Restart = "on-failure";
+        RestartSec = "5";
+      };
+    };
+
+    services.mongodb.enable = mkIf (cfg.useLocalMongo) true;
+
+    users = {
+      users.${cfg.user} = {
+        group = cfg.user;
+        isSystemUser = true;
+      };
+      groups.${cfg.user} = { };
+    };
+  };
+}
