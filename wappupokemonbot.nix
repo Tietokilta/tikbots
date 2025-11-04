@@ -30,4 +30,6 @@ buildNpmPackage {
   '';
 
   npmConfigHook = importNpmLock.npmConfigHook;
+
+  meta.mainProgram = "wappupokemonbot";
 }

@@ -23,4 +23,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     makeWrapper ${python}/bin/python $out/bin/tikbot \
       --add-flag ${finalAttrs.src}/main.py
   '';
+
+  meta.mainProgram = "tikbot";
 })

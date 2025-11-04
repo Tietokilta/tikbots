@@ -26,4 +26,6 @@ buildNpmPackage {
   '';
 
   npmConfigHook = importNpmLock.npmConfigHook;
+
+  meta.mainProgram = "summer-body-bot";
 }
