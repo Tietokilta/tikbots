@@ -59,6 +59,7 @@ in
         public.
       '';
       inherit (options.environment.variables) type apply;
+      default = { };
     };
   };
 
