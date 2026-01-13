@@ -74,7 +74,7 @@ in
       environment =
         cfg.env
         // (lib.optionalAttrs (cfg.useLocalPostgres) {
-          DATABASE_URL = "postgresql://${cfg.user}@%2Frun%2Fpostgresql/${cfg.user}";
+          DATABASE_URL = "postgresql://%2Frun%2Fpostgresql/${cfg.user}";
           # POSTGRES_USER = cfg.user;
           # POSTGRES_DB = cfg.user;
           # POSTGRES_HOST = "/run/postgresql";
@@ -98,8 +98,10 @@ in
       ensureUsers = [
         {
           name = cfg.user;
-          # password = "";
           ensureDBOwnership = true;
+          ensureClauses = {
+            password = "";
+          };
         }
       ];
     };
