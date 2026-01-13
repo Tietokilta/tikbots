@@ -28,12 +28,12 @@ in
       default = "summer-body-bot";
     };
 
-    useLocalMongo = mkOption {
+    useLocalPostgres = mkOption {
       description = ''
-        Whether to create and use a local MongoDB database.
+        Whether to create and use a local Postgresql database.
         If this option is set to true, do not set an environment
-        variable for `MONGODB_URI`, if this is set to false, set
-        the `MONGODB_URI` manually.
+        variable for `DATABASE_URL`, if this is set to false, set
+        the `DATABASE_URL` manually.
       '';
       type = types.bool;
       default = true;
@@ -67,14 +67,14 @@ in
     systemd.services.summer-body-bot = {
       enable = true;
       wantedBy = [ "multi-user.target" ];
-      after = mkIf (cfg.useLocalMongo) [
-        "mongodb.service"
+      after = mkIf (cfg.useLocalPostgres) [
+        "postgresql.service"
       ];
 
       environment =
         cfg.env
-        // (lib.optionalAttrs (cfg.useLocalMongo) {
-          MONGODB_URI = "mongodb://${config.services.mongodb.bind_ip}:27017/summer-body-bot";
+        // (lib.optionalAttrs (cfg.useLocalPostgres) {
+          DATABASE_URL = "postgresql://localhost:${toString config.services.postgresql.settings.port}/summer-body-bot";
         });
 
       serviceConfig = {
@@ -88,7 +88,7 @@ in
       };
     };
 
-    services.mongodb.enable = mkIf (cfg.useLocalMongo) true;
+    services.postgresql.enable = cfg.useLocalPostgres;
 
     users = {
       users.${cfg.user} = {
