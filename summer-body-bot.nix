@@ -49,6 +49,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "summer-body-bot";
   inherit src version;
 
+  patches = [
+      ./test.patch
+    ];
   postPatch = ''
     substituteInPlace src/config/index.ts \
       --replace-fail "DATABASE_URL: z.string().url('Invalid DATABASE_URL')," ""

@@ -1,0 +1,21 @@
+diff --git a/src/db/connection.ts b/src/db/connection.ts
+index aa195da..22c0da9 100644
+--- a/src/db/connection.ts
++++ b/src/db/connection.ts
+@@ -6,7 +6,8 @@ import { dbConfig } from '../config';
+  */
+ async function createConnection(retries = dbConfig.maxRetries): Promise<ReturnType<typeof postgres>> {
+   try {
+-    const connection = postgres(dbConfig.connectionString, {
++    const connection = postgres({
++      path: "/run/postgresql",
+       max: dbConfig.max,
+       idle_timeout: dbConfig.idle_timeout,
+       connect_timeout: dbConfig.connect_timeout,
+@@ -66,4 +67,4 @@ export const sql = new Proxy(function() {} as any, {
+     }
+     return (instance as any)(...args);
+   }
+-}) as ReturnType<typeof postgres>;
+\ No newline at end of file
++}) as ReturnType<typeof postgres>;
