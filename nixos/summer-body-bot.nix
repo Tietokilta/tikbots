@@ -74,7 +74,11 @@ in
       environment =
         cfg.env
         // (lib.optionalAttrs (cfg.useLocalPostgres) {
-          DATABASE_URL = "postgresql://localhost:${toString config.services.postgresql.settings.port}/summer-body-bot";
+          # DATABASE_URL = "postgresql://localhost:${toString config.services.postgresql.settings.port}/${cfg.user}";
+          POSTGRES_USER = cfg.user;
+          POSTGRES_DB = cfg.user;
+          POSTGRES_HOST = "/run/postgresql";
+          POSTGRES_PASSWORD = "";
         });
 
       serviceConfig = {
@@ -90,10 +94,11 @@ in
 
     services.postgresql = lib.mkIf cfg.useLocalPostgres {
       enable = true;
-      ensureDatabases = [ "summer-body-bot" ];
+      ensureDatabases = [ cfg.user ];
       ensureUsers = [
         {
-          name = "summer-body-bot";
+          name = cfg.user;
+          ensureDBOwnership = true;
         }
       ];
     };
