@@ -88,7 +88,15 @@ in
       };
     };
 
-    services.postgresql.enable = cfg.useLocalPostgres;
+    services.postgresql = lib.mkIf cfg.useLocalPostgres {
+      enable = true;
+      ensureDatabases = [ "summer-body-bot" ];
+      ensureUsers = [
+        {
+          name = "summer-body-bot";
+        }
+      ];
+    };
 
     users = {
       users.${cfg.user} = {
