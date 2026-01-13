@@ -74,7 +74,7 @@ in
       environment =
         cfg.env
         // (lib.optionalAttrs (cfg.useLocalPostgres) {
-          DATABASE_URL = "postgresql://${cfg.user}@/${cfg.user}?host=/run/postgresql";
+          DATABASE_URL = "postgresql:///${cfg.user}?host=/run/postgresql";
           # POSTGRES_USER = cfg.user;
           # POSTGRES_DB = cfg.user;
           # POSTGRES_HOST = "/run/postgresql";
