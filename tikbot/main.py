@@ -25,21 +25,21 @@ def save_channels(chats):
         chats = list(set(chats))
         json.dump(chats, fp)
 
-def start(update, context):
+async def start(update, context):
     """Send a message when the command /start is issued."""
     chats = load_chats()
     chats.append( str( update.message.chat_id ) )
     save_channels(chats)
-    update.message.reply_text('Chat registered!')
+    await update.message.reply_text('Chat registered!')
 
-def help(update, context):
+async def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    await update.message.reply_text('Help!')
 
 def escape(text):
     return text.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
-def tg_bot():
+async def tg_bot():
     print("starting bot")
     """Start the bot."""
     application = Application.builder().token(BOTTOKEN).build()
@@ -49,7 +49,25 @@ def tg_bot():
     application.add_handler(CommandHandler("help", help))
 
     # Start the Bot
-    application.run_polling()
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+
+    # Keep running
+    import signal
+    stop = asyncio.Event()
+
+    def signal_handler(sig, frame):
+        stop.set()
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    await stop.wait()
+
+    await application.updater.stop()
+    await application.stop()
+    await application.shutdown()
 
 def http_api():
     server_address = ("0.0.0.0", 4000)
@@ -87,18 +105,18 @@ class S(BaseHTTPRequestHandler):
         data = json.loads(self.rfile.read(int(self.headers.get('content-length'))))
         print(event, data)
         nchats = []
-        loop = asyncio.get_event_loop()
         if event == 'post_created' and data['post']['post_number'] == 1:
             data = data['post']
             if data['topic_title'] != "Greetings!" and data['username'] != 'system' and data['topic_archetype'] != 'private_message':
                 for c in chats:
                     try:
                         if (c=="-1001233179885"):
-                            loop.run_until_complete(bot.send_message(c, NEWTHREAD_ENG.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML"))
+                            asyncio.run_coroutine_threadsafe(bot.send_message(c, NEWTHREAD_ENG.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML"), main_loop)
                         else:
-                            loop.run_until_complete(bot.send_message(c, NEWTHREAD.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML" ))
+                            asyncio.run_coroutine_threadsafe(bot.send_message(c, NEWTHREAD.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML"), main_loop)
                         nchats.append(c)
-                    except:
+                    except Exception as ex:
+                        print(f"Error sending to {c}: {type(ex).__name__} {ex}")
                         save = True
         elif event == 'post_created':
             data = data['post']
@@ -106,11 +124,12 @@ class S(BaseHTTPRequestHandler):
                 for c in chats:
                     try:
                         if (c=="-1001233179885"):
-                            loop.run_until_complete(bot.send_message(c, NEWCOMMENT_ENG.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML", link_preview_options=LinkPreviewOptions(is_disabled=True)))
+                            asyncio.run_coroutine_threadsafe(bot.send_message(c, NEWCOMMENT_ENG.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML", link_preview_options=LinkPreviewOptions(is_disabled=True)), main_loop)
                         else:
-                            loop.run_until_complete(bot.send_message(c, NEWCOMMENT.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML", link_preview_options=LinkPreviewOptions(is_disabled=True)))
+                            asyncio.run_coroutine_threadsafe(bot.send_message(c, NEWCOMMENT.format(escape(data['topic_title']), escape(data['topic_slug']), data['topic_id']), parse_mode="HTML", link_preview_options=LinkPreviewOptions(is_disabled=True)), main_loop)
                         nchats.append(c)
-                    except:
+                    except Exception as ex:
+                        print(f"Error sending to {c}: {type(ex).__name__} {ex}")
                         save = True
                 chats = nchats
         if save:
@@ -122,10 +141,19 @@ class S(BaseHTTPRequestHandler):
         except Exception as ex:
             print(type(ex).__name__, ex)
 
+main_loop = None
+
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(http_api())
-    loop.run_until_complete(tg_bot())
-    loop.run_forever()
+    # Start HTTP server in a separate thread
+    http_thread = threading.Thread(target=http_api, daemon=True)
+    http_thread.start()
+    print("HTTP server started in background thread")
+
+    # Run the bot in the main event loop
+    main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(main_loop)
+    try:
+        main_loop.run_until_complete(tg_bot())
+    finally:
+        main_loop.close()
 
