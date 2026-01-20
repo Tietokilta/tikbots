@@ -11,8 +11,8 @@ let
   src = fetchFromGitHub {
     owner = "AJBogo9";
     repo = "activity-challenge-bot";
-    rev = "3514b7bab09cbcd6c79390523ab5db0f9207e3d9";
-    hash = "sha256-mMtWxVoUFr7GrnIeFy/0xBZGgUwndxTHAdyuLCvKLZ8=";
+    rev = "e55e4eb2ac6a031b11cb9f26b24e3cc734178c44";
+    hash = "sha256-ZIlu9aIkPiex+1ijijVJ/v4RD8kXil3XgYD39VuU1dg=";
   };
   node_modules = stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "node_modules";
@@ -21,6 +21,10 @@ let
     impureEnvVars = lib.fetchers.proxyImpureEnvVars ++ [
       "GIT_PROXY_COMMAND"
       "SOCKS_SERVER"
+    ];
+
+    patches = [
+      ./test.patch
     ];
 
     nativeBuildInputs = [ bun ];
@@ -49,13 +53,13 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "summer-body-bot";
   inherit src version;
 
-  patches = [
-      ./test.patch
-    ];
-  postPatch = ''
-    substituteInPlace src/config/index.ts \
-      --replace-fail "DATABASE_URL: z.string().url('Invalid DATABASE_URL')," ""
-  '';
+  # patches = [
+  #     ./test.patch
+  #   ];
+  # postPatch = ''
+  #   substituteInPlace src/config/index.ts \
+  #     --replace-fail "DATABASE_URL: z.string().url('Invalid DATABASE_URL')," ""
+  # '';
 
   nativeBuildInputs = [
     makeWrapper
