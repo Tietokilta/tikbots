@@ -9,12 +9,105 @@ from telegram import LinkPreviewOptions
 from telegram.ext import Application, CommandHandler
 import asyncio
 import os
-from messages import NEWCOMMENT, NEWTHREAD, NEWCOMMENT_ENG, NEWTHREAD_ENG
+from messages import NEWCOMMENT, NEWTHREAD, NEWCOMMENT_ENG, NEWTHREAD_ENG, NEWYEAR_HISTOTIK, NEWYEAR_HISTOTIK_ENG
+import re
+import urllib.request
+import time
 
 BOTTOKEN = os.environ['TELEGRAM_TOKEN']
 bot = telegram.Bot(BOTTOKEN)
 
 CHANNELS_PATH = os.environ['CHANNELS_PATH']
+HISTOTIK_STATE_PATH = os.environ.get('HISTOTIK_STATE_PATH', os.path.join(os.path.dirname(CHANNELS_PATH), 'histotik_years.json'))
+HISTOTIK_URL = os.environ.get('HISTOTIK_URL', "https://histotik.tietokilta.fi/Vuosi_vuodelta/year_header.html")
+HISTOTIK_CHECK_INTERVAL = int(os.environ.get('HISTOTIK_CHECK_INTERVAL',3600))  # Check every hour
+
+def load_known_years():
+    """Load the set of known years from state file."""
+    try:
+        with open(HISTOTIK_STATE_PATH, 'r') as fp:
+            return set(json.load(fp))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return set()
+
+def save_known_years(years):
+    """Save the set of known years to state file."""
+    with open(HISTOTIK_STATE_PATH, 'w') as fp:
+        json.dump(sorted(list(years)), fp)
+
+def fetch_histotik_years():
+    """Fetch available years from the histotik website."""
+    try:
+        req = urllib.request.Request(
+            HISTOTIK_URL,
+            headers={'User-Agent': 'TikBot/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=30) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+
+        # Find all year links like href="1984.html", HREF="2021.html"
+        year_pattern = re.compile(r'href="(\d{4})\.html"', re.IGNORECASE)
+        years = set(year_pattern.findall(html))
+        return years
+    except Exception as ex:
+        print(f"Error fetching histotik years: {type(ex).__name__} {ex}")
+        return None
+
+def histotik_monitor():
+    """Background thread that monitors histotik for new years."""
+    print(f"Starting histotik monitor (checking every {HISTOTIK_CHECK_INTERVAL}s)")
+
+    # Wait for main loop to be ready
+    while main_loop is None:
+        time.sleep(1)
+
+    while True:
+        try:
+            known_years = load_known_years()
+            current_years = fetch_histotik_years()
+            print(known_years,"_:D",current_years)
+            if current_years is None:
+                # Fetch failed, try again later
+                time.sleep(HISTOTIK_CHECK_INTERVAL)
+                continue
+
+            # Initialize state if this is first run
+            if not known_years:
+                print(f"Initializing histotik state with {len(current_years)} years: {sorted(current_years)}")
+                save_known_years(current_years)
+                time.sleep(HISTOTIK_CHECK_INTERVAL)
+                continue
+
+            # Check for new years
+            new_years = current_years - known_years
+            if new_years:
+                print(f"New years detected on histotik: {sorted(new_years)}")
+                chats = load_chats()
+
+                for year in sorted(new_years):
+                    for c in chats:
+                        try:
+                            if c == "-1001233179885":
+                                asyncio.run_coroutine_threadsafe(
+                                    bot.send_message(c, NEWYEAR_HISTOTIK_ENG.format(year), parse_mode="HTML"),
+                                    main_loop
+                                )
+                            else:
+                                asyncio.run_coroutine_threadsafe(
+                                    bot.send_message(c, NEWYEAR_HISTOTIK.format(year), parse_mode="HTML"),
+                                    main_loop
+                                )
+                        except Exception as ex:
+                            print(f"Error sending histotik notification to {c}: {type(ex).__name__} {ex}")
+
+                # Update known years
+                known_years.update(new_years)
+                save_known_years(known_years)
+
+        except Exception as ex:
+            print(f"Error in histotik monitor: {type(ex).__name__} {ex}")
+
+        time.sleep(HISTOTIK_CHECK_INTERVAL)
 
 def load_chats():
     with open(CHANNELS_PATH, 'r') as fp:
@@ -148,6 +241,11 @@ if __name__ == "__main__":
     http_thread = threading.Thread(target=http_api, daemon=True)
     http_thread.start()
     print("HTTP server started in background thread")
+
+    # Start histotik monitor in a separate thread
+    histotik_thread = threading.Thread(target=histotik_monitor, daemon=True)
+    histotik_thread.start()
+    print("Histotik monitor started in background thread")
 
     # Run the bot in the main event loop
     main_loop = asyncio.new_event_loop()
