@@ -12,7 +12,7 @@ nix build
 
 ```sh
 docker load -i result
-docker run -v summer-body-bot.env:/summer-body-bot/env tikbot.env:/tikbot/env wappupokemonbot.env:/wappupokemonbot/env -it tikbots:latest
+docker run -v summer-body-bot.env:/summer-body-bot/env tikbot.env:/tikbot/env varjoisopistekortti.env:/varjoisopistekortti/env wappupokemonbot.env:/wappupokemonbot/env -it tikbots:latest
 ```
 
 ## NixOS
