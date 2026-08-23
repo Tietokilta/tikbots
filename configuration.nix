@@ -40,7 +40,7 @@
     enable = true;
     serviceConfig = {
       ExecStart = "${varjoisopistekortti}/bin/varjoisopistekortti";
-      EnvFile = "/share/varjoisopistekortti/env";
+      EnvironmentFile = "/share/varjoisopistekortti/env";
     };
 
     environment.DB_PATH = "/share/varjoisopistekortti/pistekortti.db";
