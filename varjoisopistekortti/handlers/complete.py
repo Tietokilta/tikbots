@@ -7,6 +7,7 @@ from db import (
     get_completed_task_ids,
     get_completion_counts,
     get_conn,
+    get_language,
     get_points,
     get_setting,
     remove_completion,
@@ -22,8 +23,6 @@ def _task_text(row, lang: str) -> str:
 
 
 async def suorita(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     user = update.effective_user
     upsert_iso(user.id, user.full_name)
     lang = get_language(user.id)
@@ -58,8 +57,6 @@ async def suorita(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def task_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     await query.answer()
     user = update.effective_user
@@ -78,8 +75,6 @@ async def task_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     await query.answer()
     user = update.effective_user
@@ -99,16 +94,12 @@ async def photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def noop_already_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     lang = get_language(update.effective_user.id)
     await query.answer(text=t("already_done_toast", lang), show_alert=False)
 
 
 async def cancel_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     await query.answer()
     lang = get_language(update.effective_user.id)
@@ -118,8 +109,6 @@ async def cancel_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     lang = get_language(update.effective_user.id)
     had_pending = bool(
         context.user_data.get("pending_task_id") or context.user_data.get(AWAITING_PHOTO_KEY)
@@ -147,8 +136,6 @@ async def _finalize(
     photo_file_id: str | None,
     via_query,
 ) -> None:
-    from bot.db import get_language
-
     user = update.effective_user
     upsert_iso(user.id, user.full_name)
     lang = get_language(user.id)
@@ -185,8 +172,6 @@ async def _finalize(
 
 
 async def poistasuoritus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     user = update.effective_user
     lang = get_language(user.id)
 
@@ -219,8 +204,6 @@ async def poistasuoritus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def remove_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     await query.answer()
     user = update.effective_user
@@ -241,8 +224,6 @@ async def remove_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def remove_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    from bot.db import get_language
-
     query = update.callback_query
     await query.answer()
     user = update.effective_user
