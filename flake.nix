@@ -28,6 +28,7 @@
       packages = forAllSystems (pkgs: rec {
         summer-body-bot = pkgs.callPackage ./summer-body-bot.nix { };
         tikbot = pkgs.callPackage ./tikbot.nix { };
+        varjoisopistekortti = pkgs.callPackage ./varjoisopistekortti.nix { };
         wappupokemonbot = pkgs.callPackage ./wappupokemonbot.nix { };
 
         summer-body-bot-docker = pkgs.dockerTools.buildLayeredImage {
@@ -63,6 +64,17 @@
           config.Cmd = [ "${tikbot}/bin/tikbot" ];
         };
 
+        varjoisopistekortti-docker = pkgs.dockerTools.buildLayeredImage {
+          name = "varjoisopistekortti";
+          tag = "latest";
+
+          contents = [
+            pkgs.dockerTools.caCertificates
+          ];
+
+          config.Cmd = [ "${varjoisopistekortti}/bin/varjoisopistekortti" ];
+        };
+
         # TODO: perhaps use dockerTools.mergeImages
         docker = pkgs.dockerTools.buildLayeredImage {
           name = "tikbots";
@@ -78,6 +90,7 @@
               entrypoint = pkgs.writeShellScriptBin "entrypoint.sh" ''
                 sh -ac ". /summer-body-bot/env; exec ${summer-body-bot}/bin/summer-body-bot" &
                 sh -ac ". /tikbot/env; exec ${tikbot}/bin/tikbot" &
+                sh -ac ". /varjoisopistekortti/env; exec ${varjoisopistekortti}/bin/varjoisopistekortti" &
                 sh -ac ". /wappupokemonbot/env; exec ${wappupokemonbot}/bin/wappupokemonbot" &
                 wait
               '';

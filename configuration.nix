@@ -1,6 +1,7 @@
 {
   summer-body-bot,
   tikbot,
+  varjoisopistekortti,
   wappupokemonbot,
   lib,
   ...
@@ -33,6 +34,16 @@
     };
 
     environment.CHANNELS_PATH = "/share/tikbot/channels.json";
+  };
+
+  systemd.services.varjoisopistekortti = {
+    enable = true;
+    serviceConfig = {
+      ExecStart = "${varjoisopistekortti}/bin/varjoisopistekortti";
+      EnvFile = "/share/varjoisopistekortti/env";
+    };
+
+    environment.DB_PATH = "/share/varjoisopistekortti/pistekortti.db";
   };
 
   systemd.services.wappupokemonbot = {
