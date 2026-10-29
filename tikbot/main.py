@@ -6,7 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import threading
 from telegram import LinkPreviewOptions
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, filters
 import asyncio
 import os
 from messages import (
@@ -155,6 +155,11 @@ async def start(update, context):
     await update.message.reply_text("Chat registered!")
 
 
+async def start_not_group(update, context):
+    """Refuse /start outside group chats."""
+    await update.message.reply_text("Only group chats can be registered.")
+
+
 async def help(update, context):
     """Send a message when the command /help is issued."""
     await update.message.reply_text("Help!")
@@ -175,7 +180,10 @@ async def tg_bot():
     application = Application.builder().token(BOTTOKEN).build()
 
     # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", start))
+    application.add_handler(
+        CommandHandler("start", start, filters=filters.ChatType.GROUPS)
+    )
+    application.add_handler(CommandHandler("start", start_not_group))
     application.add_handler(CommandHandler("help", help))
 
     # Start the Bot
